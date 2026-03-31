@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quiz-app
+  labels:
+    app: quiz-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: quiz-app
+  template:
+    metadata:
+      labels:
+        app: quiz-app
+    spec:
+      containers:
+        - name: quiz-app
+          image: quiz-app:latest
+          ports:
+            - containerPort: 8000
+          volumeMounts:
+            - name: quiz-data
+              mountPath: /app/data
+            - name: quiz-questions
+              mountPath: /app/questions
+          readinessProbe:
+            httpGet:
+              path: /api/rounds
+              port: 8000
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/rounds
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 15
+      volumes:
+        - name: quiz-data
+          persistentVolumeClaim:
+            claimName: quiz-data-pvc
+        - name: quiz-questions
+          configMap:
+            name: quiz-questions

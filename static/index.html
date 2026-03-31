@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIOps 스터디 퀴즈</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            text-align: center;
+            padding: 40px 0 30px;
+        }
+        header h1 {
+            font-size: 2rem;
+            background: linear-gradient(90deg, #00d2ff, #7b2ff7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+        header p {
+            color: #999;
+            font-size: 0.95rem;
+        }
+
+        #start-section {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+        #start-section h2 {
+            margin-bottom: 24px;
+            font-size: 1.3rem;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+        #name-input, #round-select {
+            width: 100%;
+            max-width: 360px;
+            padding: 14px 20px;
+            border: 2px solid rgba(255,255,255,0.15);
+            border-radius: 12px;
+            background: rgba(255,255,255,0.06);
+            color: #fff;
+            font-size: 1.1rem;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        #name-input:focus, #round-select:focus { border-color: #7b2ff7; }
+        #name-input::placeholder { color: #666; }
+        #round-select option { background: #1a1a2e; color: #e0e0e0; }
+        .btn-primary {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 14px 48px;
+            background: linear-gradient(135deg, #7b2ff7, #00d2ff);
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(123,47,247,0.4);
+        }
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        #quiz-section { display: none; }
+        .progress-bar {
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            height: 8px;
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #7b2ff7, #00d2ff);
+            border-radius: 20px;
+            transition: width 0.4s ease;
+            width: 0%;
+        }
+        .progress-text {
+            text-align: center;
+            margin-bottom: 12px;
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+        .question-card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            transition: border-color 0.3s;
+        }
+        .question-card.answered { border-color: rgba(123,47,247,0.4); }
+        .question-number {
+            display: inline-block;
+            background: linear-gradient(135deg, #7b2ff7, #00d2ff);
+            color: #fff;
+            width: 32px;
+            height: 32px;
+            line-height: 32px;
+            text-align: center;
+            border-radius: 50%;
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-bottom: 14px;
+        }
+        .question-text {
+            font-size: 1.05rem;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        .option-label {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .option-label:hover {
+            background: rgba(123,47,247,0.1);
+            border-color: rgba(123,47,247,0.3);
+        }
+        .option-label input[type="radio"] {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.25);
+            border-radius: 50%;
+            margin-right: 12px;
+            flex-shrink: 0;
+            position: relative;
+            transition: all 0.2s;
+        }
+        .option-label input[type="radio"]:checked {
+            border-color: #7b2ff7;
+            background: #7b2ff7;
+        }
+        .option-label input[type="radio"]:checked::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 8px;
+            height: 8px;
+            background: #fff;
+            border-radius: 50%;
+        }
+        .option-text { font-size: 0.95rem; }
+        #submit-area {
+            text-align: center;
+            padding: 20px 0 40px;
+        }
+        #unanswered-warning {
+            color: #ff6b6b;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        #result-section { display: none; }
+        .result-card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            margin-bottom: 30px;
+        }
+        .score-circle {
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            margin: 0 auto 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+        .score-circle.excellent {
+            background: linear-gradient(135deg, rgba(0,210,255,0.2), rgba(123,47,247,0.2));
+            border: 3px solid #00d2ff;
+        }
+        .score-circle.good {
+            background: linear-gradient(135deg, rgba(0,210,100,0.2), rgba(0,210,255,0.2));
+            border: 3px solid #00d264;
+        }
+        .score-circle.average {
+            background: linear-gradient(135deg, rgba(255,200,0,0.2), rgba(255,150,0,0.2));
+            border: 3px solid #ffc800;
+        }
+        .score-circle.poor {
+            background: linear-gradient(135deg, rgba(255,100,100,0.2), rgba(255,50,50,0.2));
+            border: 3px solid #ff6464;
+        }
+        .score-number { font-size: 2.5rem; }
+        .score-label { font-size: 0.9rem; color: #aaa; }
+        .result-name { font-size: 1.2rem; margin-bottom: 8px; }
+        .result-message { color: #aaa; font-size: 1rem; }
+
+        .detail-card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 16px;
+            text-align: left;
+        }
+        .detail-card.correct-card { border-left: 4px solid #00d264; }
+        .detail-card.wrong-card { border-left: 4px solid #ff6464; }
+        .detail-q { font-weight: 600; margin-bottom: 14px; font-size: 1rem; }
+        .detail-options { margin-bottom: 14px; }
+        .detail-opt {
+            display: flex;
+            align-items: flex-start;
+            padding: 8px 12px;
+            margin-bottom: 4px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        .detail-opt .opt-marker {
+            flex-shrink: 0;
+            width: 22px;
+            margin-right: 8px;
+            text-align: center;
+            font-weight: 700;
+        }
+        .detail-opt.opt-correct {
+            background: rgba(0,210,100,0.1);
+            color: #00d264;
+        }
+        .detail-opt.opt-wrong {
+            background: rgba(255,100,100,0.1);
+            color: #ff6464;
+        }
+        .detail-opt.opt-neutral { color: #888; }
+        .detail-explanation {
+            background: rgba(123,47,247,0.08);
+            border-left: 3px solid rgba(123,47,247,0.4);
+            border-radius: 0 8px 8px 0;
+            padding: 12px 16px;
+            font-size: 0.88rem;
+            line-height: 1.6;
+            color: #ccc;
+        }
+        .detail-explanation strong { color: #b388ff; }
+        .btn-retry {
+            margin-top: 30px;
+            padding: 14px 48px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-retry:hover { background: rgba(255,255,255,0.15); }
+
+        .loading {
+            text-align: center;
+            padding: 60px 0;
+            color: #aaa;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255,255,255,0.1);
+            border-top-color: #7b2ff7;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 16px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>관측 가능성과 근본 원인 분석으로 완성하는 AIOps</h1>
+            <p id="subtitle">스터디 퀴즈</p>
+        </header>
+
+        <!-- 이름 + 회차 선택 -->
+        <div id="start-section">
+            <h2>퀴즈 응시</h2>
+            <div class="form-group">
+                <label for="name-input">이름</label>
+                <input type="text" id="name-input" placeholder="이름 입력" maxlength="30" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label for="round-select">시험 회차</label>
+                <select id="round-select"></select>
+            </div>
+            <button class="btn-primary" id="start-btn" onclick="startQuiz()">시험 시작</button>
+        </div>
+
+        <!-- 퀴즈 -->
+        <div id="quiz-section">
+            <div class="progress-text" id="progress-text">0 / 0 답변 완료</div>
+            <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+            <div id="questions-container"></div>
+            <div id="submit-area">
+                <div id="unanswered-warning">모든 문제에 답해주세요!</div>
+                <button class="btn-primary" id="submit-btn" onclick="submitQuiz()">제출하기</button>
+            </div>
+        </div>
+
+        <!-- 결과 -->
+        <div id="result-section">
+            <div class="result-card">
+                <div class="score-circle" id="score-circle">
+                    <div class="score-number" id="score-number">0</div>
+                    <div class="score-label" id="score-label">/ 0</div>
+                </div>
+                <div class="result-name" id="result-name"></div>
+                <div class="result-message" id="result-message"></div>
+            </div>
+            <h3 style="margin-bottom:16px;">문제별 결과</h3>
+            <div id="details-container"></div>
+            <div style="text-align:center;">
+                <button class="btn-retry" onclick="location.reload()">다시 도전하기</button>
+            </div>
+        </div>
+
+        <!-- 로딩 -->
+        <div id="loading-section" style="display:none;">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>채점 중...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let questions = [];
+        let userName = '';
+        let selectedRound = 0;
+
+        document.addEventListener('DOMContentLoaded', loadRounds);
+
+        document.getElementById('name-input').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') startQuiz();
+        });
+
+        async function loadRounds() {
+            const res = await fetch('/api/rounds');
+            const rounds = await res.json();
+            const select = document.getElementById('round-select');
+            select.innerHTML = '';
+            rounds.forEach(r => {
+                const opt = document.createElement('option');
+                opt.value = r.round;
+                opt.textContent = `${r.round}회차 (${r.question_count}문제)`;
+                select.appendChild(opt);
+            });
+        }
+
+        async function startQuiz() {
+            userName = document.getElementById('name-input').value.trim();
+            if (!userName) {
+                document.getElementById('name-input').focus();
+                return;
+            }
+            selectedRound = parseInt(document.getElementById('round-select').value);
+
+            const res = await fetch(`/api/questions/${selectedRound}`);
+            questions = await res.json();
+
+            document.getElementById('subtitle').textContent =
+                `${selectedRound}회차 - 총 ${questions.length}문제`;
+            document.getElementById('start-section').style.display = 'none';
+            document.getElementById('quiz-section').style.display = 'block';
+
+            renderQuestions();
+        }
+
+        function renderQuestions() {
+            const container = document.getElementById('questions-container');
+            container.innerHTML = '';
+
+            questions.forEach((q, idx) => {
+                const card = document.createElement('div');
+                card.className = 'question-card';
+                card.id = `card-${idx}`;
+
+                let optionsHtml = '';
+                q.options.forEach((opt, oi) => {
+                    optionsHtml += `
+                        <label class="option-label">
+                            <input type="radio" name="q${idx}" value="${oi}" onchange="onAnswer(${idx})">
+                            <span class="option-text">${opt}</span>
+                        </label>
+                    `;
+                });
+
+                card.innerHTML = `
+                    <div class="question-number">${idx + 1}</div>
+                    <div class="question-text">${q.question}</div>
+                    ${optionsHtml}
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function onAnswer(idx) {
+            document.getElementById(`card-${idx}`).classList.add('answered');
+            updateProgress();
+        }
+
+        function updateProgress() {
+            const answered = document.querySelectorAll('.question-card.answered').length;
+            const total = questions.length;
+            document.getElementById('progress-text').textContent = `${answered} / ${total} 답변 완료`;
+            document.getElementById('progress-fill').style.width = `${(answered / total) * 100}%`;
+        }
+
+        async function submitQuiz() {
+            const answers = [];
+            let allAnswered = true;
+            questions.forEach((_, idx) => {
+                const selected = document.querySelector(`input[name="q${idx}"]:checked`);
+                if (selected) {
+                    answers.push(parseInt(selected.value));
+                } else {
+                    allAnswered = false;
+                    answers.push(-1);
+                }
+            });
+
+            if (!allAnswered) {
+                document.getElementById('unanswered-warning').style.display = 'block';
+                const firstUnanswered = answers.indexOf(-1);
+                document.getElementById(`card-${firstUnanswered}`).scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+
+            document.getElementById('quiz-section').style.display = 'none';
+            document.getElementById('loading-section').style.display = 'block';
+
+            const res = await fetch('/api/submit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: userName, round: selectedRound, answers })
+            });
+            const result = await res.json();
+
+            setTimeout(() => {
+                document.getElementById('loading-section').style.display = 'none';
+                showResult(result);
+            }, 1200);
+        }
+
+        function showResult(result) {
+            document.getElementById('result-section').style.display = 'block';
+
+            const pct = result.score / result.total;
+            const circle = document.getElementById('score-circle');
+            circle.className = 'score-circle';
+            if (pct >= 0.9) circle.classList.add('excellent');
+            else if (pct >= 0.7) circle.classList.add('good');
+            else if (pct >= 0.5) circle.classList.add('average');
+            else circle.classList.add('poor');
+
+            document.getElementById('score-number').textContent = result.score;
+            document.getElementById('score-label').textContent = `/ ${result.total}`;
+            document.getElementById('result-name').textContent = `${result.name}님의 ${result.round}회차 결과`;
+
+            let msg = '';
+            if (pct >= 0.9) msg = 'AIOps 전문가시네요!';
+            else if (pct >= 0.7) msg = '좋은 성적입니다! 조금만 더 공부하면 완벽해요.';
+            else if (pct >= 0.5) msg = '기본기는 있으시네요. 조금 더 학습해보세요!';
+            else msg = 'AIOps 개념을 더 알아보는 건 어떨까요?';
+            document.getElementById('result-message').textContent = msg;
+
+            const container = document.getElementById('details-container');
+            container.innerHTML = '';
+            result.details.forEach((d, i) => {
+                const q = result.questions[i];
+                const card = document.createElement('div');
+                card.className = `detail-card ${d.is_correct ? 'correct-card' : 'wrong-card'}`;
+
+                let html = `<div class="detail-q">${i + 1}. ${q.question}</div>`;
+                html += `<div class="detail-options">`;
+                q.options.forEach((opt, oi) => {
+                    const isCorrect = oi === d.correct_answer;
+                    const isChosen = oi === d.chosen;
+                    let cls = 'opt-neutral';
+                    let marker = '&nbsp;&nbsp;';
+                    if (isCorrect) {
+                        cls = 'opt-correct';
+                        marker = '&#10003;';
+                    } else if (isChosen && !d.is_correct) {
+                        cls = 'opt-wrong';
+                        marker = '&#10007;';
+                    }
+                    const label = isChosen ? ' (내 선택)' : '';
+                    html += `<div class="detail-opt ${cls}">`;
+                    html += `<span class="opt-marker">${marker}</span>`;
+                    html += `<span>${opt}${label}</span>`;
+                    html += `</div>`;
+                });
+                html += `</div>`;
+
+                if (q.explanation) {
+                    html += `<div class="detail-explanation"><strong>해설:</strong> ${q.explanation}</div>`;
+                }
+
+                card.innerHTML = html;
+                container.appendChild(card);
+            });
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
