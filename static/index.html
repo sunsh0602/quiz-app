@@ -94,11 +94,21 @@
         }
 
         #quiz-section { display: none; }
+        .progress-sticky {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            padding: 16px 0 4px;
+            margin: 0 -20px;
+            padding-left: 20px;
+            padding-right: 20px;
+        }
         .progress-bar {
             background: rgba(255,255,255,0.1);
             border-radius: 20px;
             height: 8px;
-            margin-bottom: 30px;
+            margin-bottom: 16px;
             overflow: hidden;
         }
         .progress-fill {
@@ -337,8 +347,10 @@
 
         <!-- 퀴즈 -->
         <div id="quiz-section">
-            <div class="progress-text" id="progress-text">0 / 0 답변 완료</div>
-            <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+            <div class="progress-sticky">
+                <div class="progress-text" id="progress-text">0 / 0 답변 완료</div>
+                <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+            </div>
             <div id="questions-container"></div>
             <div id="submit-area">
                 <div id="unanswered-warning">모든 문제에 답해주세요!</div>
