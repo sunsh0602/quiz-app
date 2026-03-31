@@ -1,7 +1,8 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: quiz-app
+  name: quiz-app-deployment
+  namespace: quiz-app
   labels:
     app: quiz-app
 spec:
@@ -39,7 +40,7 @@ spec:
       volumes:
         - name: quiz-data
           persistentVolumeClaim:
-            claimName: quiz-data-pvc
+            claimName: quiz-app-pvc
         - name: quiz-questions
           configMap:
             name: quiz-questions
