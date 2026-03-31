@@ -63,6 +63,11 @@ async def admin():
     return FileResponse("static/admin.html")
 
 
+@app.get("/admin-hidden")
+async def admin_hidden():
+    return FileResponse("static/admin-hidden.html")
+
+
 @app.get("/api/rounds")
 async def get_rounds():
     return get_available_rounds()
