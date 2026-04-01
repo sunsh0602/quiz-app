@@ -188,7 +188,8 @@ async def get_questions(round_num: int):
 
 @app.post("/api/submit")
 async def submit_quiz(submission: QuizSubmission, request: Request):
-    client_ip = request.headers.get("x-forwarded-for", request.client.host)
+    xff = request.headers.get("x-forwarded-for", "")
+    client_ip = xff.split(",")[0].strip() if xff else request.headers.get("x-real-ip", request.client.host)
     questions = db_get_questions(submission.round)
 
     score = 0

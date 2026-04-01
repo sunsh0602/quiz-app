@@ -15,6 +15,7 @@ ingress:
   host: svc-cloudops.nhnent.com
   annotations:
     nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/use-forwarded-headers: "true"
 
 persistence:
   enabled: true
