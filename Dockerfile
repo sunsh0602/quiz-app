@@ -10,7 +10,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY main.py questions.py ./
 COPY static/ static/
-COPY questions/ questions/
 
 RUN mkdir -p /app/data
 
