@@ -41,7 +41,8 @@
         .rank-2 { background: linear-gradient(135deg, #c0c0c0, #a0a0a0); color: #1a1a2e; }
         .rank-3 { background: linear-gradient(135deg, #cd7f32, #a0622e); color: #fff; }
         .rank-other { background: rgba(255,255,255,0.1); color: #aaa; }
-        .score-bar-container { display: flex; align-items: center; gap: 10px; }
+        .score-bar-container { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+        .score-bar-container:hover { opacity: 0.8; }
         .score-bar { flex: 1; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; }
         .score-bar-fill { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
         .score-text { font-weight: 600; min-width: 60px; text-align: right; }
@@ -49,22 +50,29 @@
         .time-col { color: #888; font-size: 0.85rem; } .ip-col { color: #666; font-size: 0.8rem; }
         .empty-state { text-align: center; padding: 60px 20px; color: #666; }
         .empty-state p { font-size: 1.1rem; margin-bottom: 8px; }
-        .score-link { cursor: pointer; text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px; }
-        .score-link:hover { color: #00d2ff; }
         .detail-row td { padding: 0 !important; border-top: none !important; }
-        .detail-panel {
-            background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px;
-            margin: 0 16px 12px; padding: 16px; font-size: 0.85rem;
+        .detail-panel { margin: 0 8px 12px; }
+        .detail-card {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px; padding: 24px; margin-bottom: 12px; text-align: left;
         }
-        .detail-panel .dq { margin-bottom: 10px; padding: 8px 12px; border-radius: 8px; }
-        .dq-correct { border-left: 3px solid #00d264; background: rgba(0,210,100,0.05); }
-        .dq-wrong { border-left: 3px solid #ff6464; background: rgba(255,100,100,0.05); }
-        .dq-title { font-weight: 600; margin-bottom: 6px; }
-        .dq-opt { padding: 2px 0; color: #888; }
-        .dq-opt.chosen-correct { color: #00d264; font-weight: 600; }
-        .dq-opt.chosen-wrong { color: #ff6464; font-weight: 600; }
-        .dq-opt.is-answer { color: #00d264; }
-        .dq-explanation { color: #b388ff; font-size: 0.82rem; margin-top: 4px; }
+        .detail-card.correct-card { border-left: 4px solid #00d264; }
+        .detail-card.wrong-card { border-left: 4px solid #ff6464; }
+        .detail-q { font-weight: 600; margin-bottom: 14px; font-size: 0.95rem; }
+        .detail-options { margin-bottom: 14px; }
+        .detail-opt {
+            display: flex; align-items: flex-start; padding: 8px 12px;
+            margin-bottom: 4px; border-radius: 8px; font-size: 0.9rem; line-height: 1.5;
+        }
+        .detail-opt .opt-marker { flex-shrink: 0; width: 22px; margin-right: 8px; text-align: center; font-weight: 700; }
+        .detail-opt.opt-correct { background: rgba(0,210,100,0.1); color: #00d264; }
+        .detail-opt.opt-wrong { background: rgba(255,100,100,0.1); color: #ff6464; }
+        .detail-opt.opt-neutral { color: #888; }
+        .detail-explanation {
+            background: rgba(123,47,247,0.08); border-left: 3px solid rgba(123,47,247,0.4);
+            border-radius: 0 8px 8px 0; padding: 12px 16px; font-size: 0.88rem; line-height: 1.6; color: #ccc;
+        }
+        .detail-explanation strong { color: #b388ff; }
     </style>
 </head>
 <body>
@@ -82,7 +90,6 @@
             <h2>순위표</h2>
             <div class="toolbar-btns">
                 <select id="round-filter" onchange="loadResults()"><option value="0">전체 회차</option></select>
-                <span class="auto-refresh">5초마다 자동 갱신</span>
                 <button class="btn" onclick="loadResults()">새로고침</button>
             </div>
         </div>
@@ -136,7 +143,7 @@ async function loadResults() {
             <td><span class="rank-badge ${rankClass}">${r.rank}</span></td>
             <td><span class="round-badge">${r.round}회차</span></td>
             <td><span style="font-weight:600;">${r.name}</span> <span class="ip-col">(${r.ip||'?'})</span></td>
-            <td><div class="score-bar-container"><div class="score-bar"><div class="score-bar-fill" style="width:${pct}%;background:${barColor};"></div></div><span class="score-text score-link" onclick="toggleDetail(${r.id})">${r.score} / ${r.total}</span></div></td>
+            <td><div class="score-bar-container" onclick="toggleDetail(${r.id})" title="클릭하여 상세보기"><div class="score-bar"><div class="score-bar-fill" style="width:${pct}%;background:${barColor};"></div></div><span class="score-text">${r.score} / ${r.total}</span></div></td>
             <td class="time-col">${time}</td>`;
         tbody.appendChild(tr);
     });
@@ -147,7 +154,7 @@ async function toggleDetail(id) {
     const res = await fetch(`/api/results/${id}/details`);
     if (!res.ok) return;
     const {details, questions} = await res.json();
-    if (!details.length) { alert('상세 정보가 없습니다.'); return; }
+    if (!details.length) { alert('상세 정보가 없습니다. (이전 데이터는 상세 기록이 없습니다)'); return; }
     const row = document.getElementById(`row-${id}`);
     const detailTr = document.createElement('tr');
     detailTr.id = `detail-${id}`;
@@ -156,27 +163,29 @@ async function toggleDetail(id) {
     details.forEach((d, i) => {
         const q = questions[i];
         if (!q) return;
-        const cls = d.is_correct ? 'dq-correct' : 'dq-wrong';
-        html += `<div class="dq ${cls}"><div class="dq-title">${i+1}. ${q.question}</div>`;
+        const cardCls = d.is_correct ? 'correct-card' : 'wrong-card';
+        html += `<div class="detail-card ${cardCls}">`;
+        html += `<div class="detail-q">${i+1}. ${q.question}</div>`;
+        html += '<div class="detail-options">';
         q.options.forEach((opt, oi) => {
             const isAnswer = oi === d.correct_answer;
             const isChosen = oi === d.chosen;
-            let optCls = 'dq-opt';
+            let cls = 'detail-opt opt-neutral';
             let marker = '&nbsp;&nbsp;';
-            if (isAnswer && isChosen) { optCls += ' chosen-correct'; marker = '✓'; }
-            else if (isAnswer) { optCls += ' is-answer'; marker = '✓'; }
-            else if (isChosen) { optCls += ' chosen-wrong'; marker = '✗'; }
-            const chosenLabel = isChosen ? ' ← 선택' : '';
-            html += `<div class="${optCls}">${marker} ${opt}${chosenLabel}</div>`;
+            if (isAnswer) { cls = 'detail-opt opt-correct'; marker = '&#10003;'; }
+            else if (isChosen && !d.is_correct) { cls = 'detail-opt opt-wrong'; marker = '&#10007;'; }
+            const label = isChosen ? ' (내 선택)' : '';
+            html += `<div class="${cls}"><span class="opt-marker">${marker}</span><span>${opt}${label}</span></div>`;
         });
-        if (q.explanation) html += `<div class="dq-explanation">💡 ${q.explanation}</div>`;
+        html += '</div>';
+        if (q.explanation) html += `<div class="detail-explanation"><strong>해설:</strong> ${q.explanation}</div>`;
         html += '</div>';
     });
     html += '</div></td>';
     detailTr.innerHTML = html;
     row.after(detailTr);
 }
-loadRoundFilter(); loadResults(); setInterval(loadResults, 5000);
+loadRoundFilter(); loadResults();
 </script>
 </body>
 </html>
