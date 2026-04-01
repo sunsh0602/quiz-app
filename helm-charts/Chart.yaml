@@ -1,0 +1,6 @@
+apiVersion: v2
+name: quiz-app
+description: AIOps 스터디 퀴즈 앱
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
