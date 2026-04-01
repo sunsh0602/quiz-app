@@ -71,7 +71,6 @@
         #round-select option { background: #1a1a2e; color: #e0e0e0; }
         .btn-primary {
             display: inline-block;
-            margin-top: 20px;
             padding: 14px 48px;
             background: linear-gradient(135deg, #7b2ff7, #00d2ff);
             border: none;
@@ -342,7 +341,10 @@
                 <label for="round-select">시험 회차</label>
                 <select id="round-select"></select>
             </div>
-            <button class="btn-primary" id="start-btn" onclick="startQuiz()">시험 시작</button>
+            <div style="display:flex; justify-content:center; gap:12px; margin-top:20px;">
+                <button class="btn-primary" id="start-btn" onclick="startQuiz()">시험 시작</button>
+                <button class="btn-primary" onclick="window.open('/result','_blank')" style="background:linear-gradient(135deg,#ff6b6b,#ffc947);">결과 보기</button>
+            </div>
         </div>
 
         <!-- 퀴즈 -->

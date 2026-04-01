@@ -33,9 +33,14 @@ def init_db():
                 ip TEXT NOT NULL,
                 score INTEGER NOT NULL,
                 total INTEGER NOT NULL,
-                submitted_at TEXT NOT NULL
+                submitted_at TEXT NOT NULL,
+                details TEXT DEFAULT ''
             )
         """)
+        try:
+            conn.execute("ALTER TABLE results ADD COLUMN details TEXT DEFAULT ''")
+        except Exception:
+            pass
         conn.execute("""
             CREATE TABLE IF NOT EXISTS rounds (
                 round INTEGER PRIMARY KEY,
@@ -146,6 +151,9 @@ class RoundUpdate(BaseModel):
 class MarkdownImport(BaseModel):
     markdown: str
 
+class NameUpdate(BaseModel):
+    name: str
+
 
 # --- 앱 시작 ---
 
@@ -207,10 +215,11 @@ async def submit_quiz(submission: QuizSubmission, request: Request):
         })
 
     now = datetime.now().isoformat()
+    details_json = json.dumps(details, ensure_ascii=False)
     with get_db() as conn:
         conn.execute(
-            "INSERT INTO results (round, name, ip, score, total, submitted_at) VALUES (?, ?, ?, ?, ?, ?)",
-            (submission.round, submission.name, client_ip, score, len(questions), now),
+            "INSERT INTO results (round, name, ip, score, total, submitted_at, details) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (submission.round, submission.name, client_ip, score, len(questions), now, details_json),
         )
 
     return {
@@ -257,6 +266,26 @@ async def delete_result(result_id: int):
     with get_db() as conn:
         conn.execute("DELETE FROM results WHERE id = ?", (result_id,))
     return {"message": "삭제되었습니다."}
+
+@app.patch("/api/results/{result_id}")
+async def update_result_name(result_id: int, body: NameUpdate):
+    name = body.name.strip()
+    if not name:
+        raise HTTPException(400, "이름을 입력하세요.")
+    with get_db() as conn:
+        conn.execute("UPDATE results SET name = ? WHERE id = ?", (name, result_id))
+    return {"message": "수정되었습니다."}
+
+@app.get("/api/results/{result_id}/details")
+async def get_result_details(result_id: int):
+    with get_db() as conn:
+        row = conn.execute("SELECT * FROM results WHERE id = ?", (result_id,)).fetchone()
+    if not row:
+        raise HTTPException(404, "결과를 찾을 수 없습니다.")
+    details_raw = row["details"] if row["details"] else "[]"
+    details = json.loads(details_raw)
+    questions = db_get_questions(row["round"])
+    return {"result": {"id": row["id"], "round": row["round"], "name": row["name"], "score": row["score"], "total": row["total"]}, "details": details, "questions": questions}
 
 
 # --- 관리자 회차 CRUD ---
