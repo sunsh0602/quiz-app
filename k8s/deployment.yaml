@@ -7,6 +7,11 @@ metadata:
     app: quiz-app
 spec:
   replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1  # 기존 Pod 종료 후 새 Pod 생성
+      maxSurge: 0        # 동시에 새 Pod 생성 금지
   selector:
     matchLabels:
       app: quiz-app
@@ -22,7 +27,7 @@ spec:
             - containerPort: 8000
           volumeMounts:
             - name: quiz-data
-              mountPath: /app/data
+              mountPath: /app/data  # SQLite DB 파일
             - name: quiz-questions
               mountPath: /app/questions
           readinessProbe:
