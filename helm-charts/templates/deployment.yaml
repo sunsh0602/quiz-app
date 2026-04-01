@@ -28,8 +28,6 @@ spec:
           volumeMounts:
             - name: quiz-data
               mountPath: /app/data
-            - name: quiz-questions
-              mountPath: /app/questions
           readinessProbe:
             httpGet:
               path: /api/rounds
@@ -50,6 +48,3 @@ spec:
           {{- else }}
           emptyDir: {}
           {{- end }}
-        - name: quiz-questions
-          configMap:
-            name: {{ include "quiz-app.fullname" . }}-questions

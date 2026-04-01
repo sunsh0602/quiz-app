@@ -21,5 +21,3 @@ persistence:
   accessMode: ReadWriteOnce
   size: 500Mi
 
-configmap:
-  questionsFile: 1.md

@@ -27,9 +27,7 @@ spec:
             - containerPort: 8000
           volumeMounts:
             - name: quiz-data
-              mountPath: /app/data  # SQLite DB 파일
-            - name: quiz-questions
-              mountPath: /app/questions
+              mountPath: /app/data
           readinessProbe:
             httpGet:
               path: /api/rounds
@@ -46,6 +44,3 @@ spec:
         - name: quiz-data
           persistentVolumeClaim:
             claimName: quiz-app-pvc
-        - name: quiz-questions
-          configMap:
-            name: quiz-questions

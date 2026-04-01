@@ -4,9 +4,8 @@ from pathlib import Path
 QUESTIONS_DIR = Path(__file__).parent / "questions"
 
 
-def load_questions(path: Path) -> list[dict]:
-    text = path.read_text(encoding="utf-8")
-
+def parse_questions_md(text: str) -> list[dict]:
+    """마크다운 텍스트를 파싱하여 문제 목록을 반환"""
     blocks = re.split(r"^(##!?)\s*$", text, flags=re.MULTILINE)
 
     questions = []
@@ -47,6 +46,10 @@ def load_questions(path: Path) -> list[dict]:
             })
 
     return questions
+
+
+def load_questions(path: Path) -> list[dict]:
+    return parse_questions_md(path.read_text(encoding="utf-8"))
 
 
 def get_available_rounds() -> list[dict]:

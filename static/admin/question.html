@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>문제 관리</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            min-height: 100vh; color: #e0e0e0;
+        }
+        .container { max-width: 960px; margin: 0 auto; padding: 20px; }
+        header { text-align: center; padding: 40px 0 30px; }
+        header h1 {
+            font-size: 2rem;
+            background: linear-gradient(90deg, #7b2ff7, #00d2ff);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px;
+        }
+        header p { color: #999; font-size: 0.95rem; }
+
+        .card {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 14px; padding: 24px; margin-bottom: 16px; backdrop-filter: blur(10px);
+        }
+        .btn {
+            padding: 10px 20px; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px;
+            background: rgba(255,255,255,0.06); color: #e0e0e0; font-size: 0.9rem;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .btn:hover { background: rgba(255,255,255,0.12); }
+        .btn-primary { border-color: rgba(123,47,247,0.4); color: #b388ff; }
+        .btn-primary:hover { background: rgba(123,47,247,0.15); }
+        .btn-danger { border-color: rgba(255,80,80,0.4); color: #ff6b6b; }
+        .btn-danger:hover { background: rgba(255,80,80,0.15); }
+        .btn-success { border-color: rgba(0,210,100,0.4); color: #00d264; }
+        .btn-success:hover { background: rgba(0,210,100,0.15); }
+        .btn-sm { padding: 6px 14px; font-size: 0.8rem; }
+
+        .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
+        .toolbar h2 { font-size: 1.2rem; }
+        .toolbar-btns { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .round-badge { display: inline-block; background: rgba(123,47,247,0.2); color: #b388ff; padding: 2px 10px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; }
+        .empty-state { text-align: center; padding: 60px 20px; color: #666; }
+        .empty-state p { font-size: 1.1rem; margin-bottom: 8px; }
+
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal {
+            background: #1a1a2e; border: 1px solid rgba(255,255,255,0.15); border-radius: 16px;
+            padding: 32px; width: 90%; max-width: 640px; max-height: 85vh; overflow-y: auto;
+        }
+        .modal h3 { margin-bottom: 20px; font-size: 1.2rem; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; margin-bottom: 6px; color: #aaa; font-size: 0.85rem; }
+        .form-group input {
+            width: 100%; padding: 10px 14px; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px;
+            background: rgba(255,255,255,0.06); color: #e0e0e0; font-size: 0.95rem; outline: none; font-family: inherit;
+        }
+        .form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+
+        .md-editor {
+            width: 100%; min-height: 500px; padding: 16px; resize: vertical;
+            border: 1px solid rgba(255,255,255,0.15); border-radius: 12px;
+            background: rgba(0,0,0,0.3); color: #e0e0e0;
+            font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+            font-size: 0.9rem; line-height: 1.7; outline: none; tab-size: 2;
+        }
+        .md-editor:focus { border-color: rgba(123,47,247,0.5); }
+        .md-editor::placeholder { color: #555; }
+        .md-help {
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 10px; padding: 14px 18px; margin-bottom: 16px;
+            font-size: 0.82rem; color: #888; line-height: 1.9;
+        }
+        .md-help code { background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px; color: #b388ff; font-size: 0.8rem; }
+        .save-status { font-size: 0.85rem; color: #00d264; margin-right: 8px; }
+        .question-count-badge {
+            display: inline-block; background: rgba(0,210,255,0.15); color: #00d2ff;
+            padding: 4px 12px; border-radius: 8px; font-size: 0.85rem; font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>문제 관리</h1>
+            <p>회차별 문제를 생성하고 편집합니다</p>
+        </header>
+
+        <div class="toolbar">
+            <h2>회차 목록</h2>
+            <button class="btn btn-primary" onclick="openRoundModal()">+ 새 회차 추가</button>
+        </div>
+        <div id="rounds-list"></div>
+
+        <div id="editor-section" style="display:none; margin-top: 24px;">
+            <div class="toolbar">
+                <div>
+                    <h2 id="editor-title" style="display:inline;">문제 편집</h2>
+                    <span class="question-count-badge" id="editor-count" style="margin-left:12px;">0문제</span>
+                </div>
+                <div class="toolbar-btns">
+                    <span class="save-status" id="save-status"></span>
+                    <button class="btn btn-success" onclick="saveMarkdown()">저장</button>
+                </div>
+            </div>
+            <div class="md-help">
+                <code>##</code> 문제 구분 &nbsp;│&nbsp;
+                <code>- </code> 선택지 &nbsp;│&nbsp;
+                <code>* </code> 정답 &nbsp;│&nbsp;
+                <code>&gt; </code> 해설 &nbsp;│&nbsp;
+                <code>##!</code> 문제 제외(주석)
+            </div>
+            <textarea class="md-editor" id="md-editor" placeholder="##
+질문 내용을 입력하세요
+- 오답 선택지 1
+- 오답 선택지 2
+* 정답 선택지
+- 오답 선택지 3
+> 해설을 입력하세요 (선택)
+
+##
+다음 질문..."></textarea>
+        </div>
+    </div>
+
+    <!-- 회차 모달 -->
+    <div class="modal-overlay" id="round-modal">
+        <div class="modal">
+            <h3 id="round-modal-title">새 회차 추가</h3>
+            <div class="form-group">
+                <label>회차 번호</label>
+                <input type="number" id="round-num-input" min="1" placeholder="예: 2">
+            </div>
+            <div class="form-group">
+                <label>제목</label>
+                <input type="text" id="round-title-input" placeholder="예: AIOps 스터디 2차 퀴즈">
+            </div>
+            <div class="form-actions">
+                <button class="btn" onclick="closeModal('round-modal')">취소</button>
+                <button class="btn btn-primary" onclick="saveRound()">저장</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+let currentRound = null;
+let editingRound = null;
+
+async function loadRoundsList() {
+    const rounds = await (await fetch('/api/admin/rounds')).json();
+    const container = document.getElementById('rounds-list');
+    if (!rounds.length) {
+        container.innerHTML = '<div class="empty-state"><p>등록된 회차가 없습니다</p></div>';
+        return;
+    }
+    container.innerHTML = rounds.map(r => `
+        <div class="card" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;"
+             onclick="selectRound(${r.round})" id="round-card-${r.round}">
+            <div>
+                <span class="round-badge">${r.round}회차</span>
+                <span style="margin-left:12px;font-weight:600;">${r.title}</span>
+                <span style="margin-left:12px;color:#888;font-size:0.85rem;">${r.question_count}문제</span>
+            </div>
+            <div style="display:flex;gap:6px;" onclick="event.stopPropagation()">
+                <button class="btn btn-sm" onclick="openRoundModal(${r.round},'${r.title.replace(/'/g,"\\'")}')">수정</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteRound(${r.round})">삭제</button>
+            </div>
+        </div>
+    `).join('');
+    if (currentRound) highlightRound(currentRound);
+}
+
+function highlightRound(roundNum) {
+    document.querySelectorAll('[id^="round-card-"]').forEach(el => el.style.borderColor = 'rgba(255,255,255,0.1)');
+    const card = document.getElementById(`round-card-${roundNum}`);
+    if (card) card.style.borderColor = 'rgba(123,47,247,0.6)';
+}
+
+function openRoundModal(roundNum, title) {
+    editingRound = roundNum || null;
+    document.getElementById('round-modal-title').textContent = editingRound ? '회차 수정' : '새 회차 추가';
+    document.getElementById('round-num-input').value = roundNum || '';
+    document.getElementById('round-num-input').disabled = !!editingRound;
+    document.getElementById('round-title-input').value = title || '';
+    document.getElementById('round-modal').classList.add('show');
+}
+
+async function saveRound() {
+    const round = parseInt(document.getElementById('round-num-input').value);
+    const title = document.getElementById('round-title-input').value.trim();
+    if (!round || !title) return alert('회차 번호와 제목을 입력하세요.');
+    if (editingRound) {
+        await fetch(`/api/admin/rounds/${editingRound}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({title}) });
+    } else {
+        const res = await fetch('/api/admin/rounds', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({round, title}) });
+        if (!res.ok) { const d = await res.json(); return alert(d.detail); }
+        currentRound = round;
+    }
+    closeModal('round-modal');
+    loadRoundsList();
+    if (!editingRound) selectRound(round);
+}
+
+async function deleteRound(roundNum) {
+    if (!confirm(`${roundNum}회차를 삭제하시겠습니까?\n포함된 모든 문제도 함께 삭제됩니다.`)) return;
+    await fetch(`/api/admin/rounds/${roundNum}`, { method:'DELETE' });
+    if (currentRound === roundNum) { currentRound = null; document.getElementById('editor-section').style.display = 'none'; }
+    loadRoundsList();
+}
+
+async function selectRound(roundNum) {
+    if (currentRound === roundNum && document.getElementById('editor-section').style.display !== 'none') {
+        currentRound = null;
+        document.getElementById('editor-section').style.display = 'none';
+        highlightRound(null);
+        return;
+    }
+    currentRound = roundNum;
+    highlightRound(roundNum);
+    document.getElementById('editor-section').style.display = 'block';
+    document.getElementById('editor-title').textContent = `${roundNum}회차 문제 편집`;
+    document.getElementById('save-status').textContent = '';
+    const data = await (await fetch(`/api/admin/rounds/${roundNum}/markdown`)).json();
+    document.getElementById('md-editor').value = data.markdown;
+    updateQuestionCount();
+}
+
+function updateQuestionCount() {
+    const count = (document.getElementById('md-editor').value.match(/^##\s*$/gm) || []).length;
+    document.getElementById('editor-count').textContent = `${count}문제`;
+}
+
+async function saveMarkdown() {
+    const markdown = document.getElementById('md-editor').value;
+    if (!markdown.trim()) return alert('문제 내용을 입력하세요.');
+    const res = await fetch(`/api/admin/rounds/${currentRound}/markdown`, {
+        method:'PUT', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ markdown }),
+    });
+    const data = await res.json();
+    if (!res.ok) return alert(data.detail);
+    document.getElementById('save-status').textContent = `✓ ${data.message}`;
+    setTimeout(() => document.getElementById('save-status').textContent = '', 3000);
+    loadRoundsList();
+    updateQuestionCount();
+}
+
+document.addEventListener('input', e => { if (e.target.id === 'md-editor') updateQuestionCount(); });
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+loadRoundsList();
+</script>
+</body>
+</html>
