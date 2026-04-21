@@ -347,7 +347,7 @@
             </div>
             <div style="display:flex; justify-content:center; gap:12px; margin-top:20px;">
                 <button class="btn-primary" id="start-btn" onclick="startQuiz()">시험 시작</button>
-                <button class="btn-primary" onclick="window.open('/result','_blank')" style="background:linear-gradient(135deg,#ff6b6b,#ffc947);">결과 보기</button>
+                <button class="btn-primary" onclick="location.href='/result'" style="background:linear-gradient(135deg,#ff6b6b,#ffc947);">결과 보기</button>
             </div>
         </div>
 
@@ -378,7 +378,7 @@
             <div id="details-container"></div>
             <div style="text-align:center; display:flex; justify-content:center; gap:12px; flex-wrap:wrap;">
                 <button class="btn-retry" onclick="location.reload()">다시 도전하기</button>
-                <button class="btn-retry" onclick="window.open('/result','_blank')" style="border-color:rgba(0,210,255,0.4);color:#00d2ff;">결과 순위보기</button>
+                <button class="btn-retry" onclick="location.href='/result'" style="border-color:rgba(0,210,255,0.4);color:#00d2ff;">결과 순위보기</button>
             </div>
         </div>
 
