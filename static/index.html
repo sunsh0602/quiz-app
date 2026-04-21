@@ -403,12 +403,9 @@
                 document.getElementById('user-name-display').textContent = userName;
                 document.getElementById('topbar-name').textContent = userName;
                 document.getElementById('user-topbar').style.display = 'block';
-            } else if (me.oidc_enabled) {
+            } else {
                 location.href = '/auth/login';
                 return;
-            } else {
-                document.getElementById('user-name-display').textContent = '(로컬 테스트)';
-                userName = '테스트';
             }
             loadRounds();
         });

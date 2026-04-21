@@ -22,11 +22,11 @@ STATIC_DIR = BASE_DIR / "static"
 DB_PATH = BASE_DIR / "data" / "quiz.db"
 
 # --- OIDC 설정 ---
-OIDC_ENABLED = os.getenv("OIDC_ENABLED", "false").lower() == "true"
+OIDC_ENABLED = os.getenv("OIDC_ENABLED", "true").lower() == "true"
 OIDC_ISSUER = os.getenv("OIDC_ISSUER", "https://sign-in.nhnent.com/auth/realms/nhn")
 OIDC_CLIENT_ID = os.getenv("OIDC_CLIENT_ID", "svccloudops")
-OIDC_CLIENT_SECRET = os.getenv("OIDC_CLIENT_SECRET", "")
-OIDC_REDIRECT_URI = os.getenv("OIDC_REDIRECT_URI", "http://localhost:8000/auth/callback")
+OIDC_CLIENT_SECRET = os.getenv("OIDC_CLIENT_SECRET", "3tGeNwlCi3HpIWz37z78LAFUxVfCSvBL")
+OIDC_REDIRECT_URI = os.getenv("OIDC_REDIRECT_URI", "https://svc-cloudops.nhnent.com/auth/callback")
 SESSION_SECRET = os.getenv("SESSION_SECRET", "quiz-app-session-secret-change-me")
 
 app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET)
