@@ -25,6 +25,11 @@ spec:
           image: quiz-app:latest
           ports:
             - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: quiz-app-config
+            - secretRef:
+                name: quiz-app-secret
           volumeMounts:
             - name: quiz-data
               mountPath: /app/data

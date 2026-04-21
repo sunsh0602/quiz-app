@@ -1,12 +1,16 @@
 import json
+import os
 import sqlite3
 from pathlib import Path
 from contextlib import contextmanager
 from datetime import datetime
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse, JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from starlette.middleware.sessions import SessionMiddleware
+from authlib.integrations.starlette_client import OAuth
 
 from questions import load_questions, parse_questions_md, QUESTIONS_DIR
 from crypto import encrypt, decrypt
@@ -16,6 +20,44 @@ app = FastAPI()
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
 DB_PATH = BASE_DIR / "data" / "quiz.db"
+
+# --- OIDC 설정 ---
+OIDC_ENABLED = os.getenv("OIDC_ENABLED", "false").lower() == "true"
+OIDC_ISSUER = os.getenv("OIDC_ISSUER", "https://sign-in.nhnent.com/auth/realms/nhn")
+OIDC_CLIENT_ID = os.getenv("OIDC_CLIENT_ID", "svccloudops")
+OIDC_CLIENT_SECRET = os.getenv("OIDC_CLIENT_SECRET", "")
+OIDC_REDIRECT_URI = os.getenv("OIDC_REDIRECT_URI", "http://localhost:8000/auth/callback")
+SESSION_SECRET = os.getenv("SESSION_SECRET", "quiz-app-session-secret-change-me")
+
+app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET)
+
+oauth = OAuth()
+if OIDC_ENABLED:
+    oauth.register(
+        name="keycloak",
+        client_id=OIDC_CLIENT_ID,
+        client_secret=OIDC_CLIENT_SECRET,
+        server_metadata_url=f"{OIDC_ISSUER}/.well-known/openid-configuration",
+        client_kwargs={"scope": "openid profile email"},
+    )
+
+
+def require_login(request: Request):
+    if not OIDC_ENABLED:
+        return
+    user = request.session.get("user")
+    if not user:
+        raise HTTPException(status_code=401, detail="로그인이 필요합니다.")
+
+
+def require_login_page(request: Request):
+    """페이지 라우트용: 미인증 시 로그인 리다이렉트"""
+    if not OIDC_ENABLED:
+        return None
+    user = request.session.get("user")
+    if not user:
+        return RedirectResponse(url="/auth/login")
+    return None
 
 
 def static_file(name: str) -> FileResponse:
@@ -188,22 +230,70 @@ def startup():
     seed_from_md()
 
 
+# --- 인증 라우트 ---
+
+@app.get("/auth/login")
+async def auth_login(request: Request):
+    if not OIDC_ENABLED:
+        return RedirectResponse(url="/")
+    redirect_uri = OIDC_REDIRECT_URI
+    return await oauth.keycloak.authorize_redirect(request, redirect_uri)
+
+@app.get("/auth/callback")
+async def auth_callback(request: Request):
+    if not OIDC_ENABLED:
+        return RedirectResponse(url="/")
+    token = await oauth.keycloak.authorize_access_token(request)
+    userinfo = token.get("userinfo", {})
+    request.session["user"] = {
+        "sub": userinfo.get("sub", ""),
+        "name": userinfo.get("name", userinfo.get("preferred_username", "")),
+        "email": userinfo.get("email", ""),
+    }
+    return RedirectResponse(url="/")
+
+@app.get("/auth/logout")
+async def auth_logout(request: Request):
+    request.session.clear()
+    if not OIDC_ENABLED:
+        return RedirectResponse(url="/")
+    logout_url = f"{OIDC_ISSUER}/protocol/openid-connect/logout?redirect_uri={OIDC_REDIRECT_URI.rsplit('/auth/callback', 1)[0]}"
+    return RedirectResponse(url=logout_url)
+
+@app.get("/api/auth/me")
+async def auth_me(request: Request):
+    user = request.session.get("user")
+    return {"authenticated": bool(user), "user": user, "oidc_enabled": OIDC_ENABLED}
+
+
 # --- 페이지 라우트 ---
 
 @app.get("/")
-async def index():
+async def index(request: Request):
+    redirect = require_login_page(request)
+    if redirect:
+        return redirect
     return static_file("index.html")
 
 @app.get("/result")
-async def page_result():
+async def page_result(request: Request):
+    redirect = require_login_page(request)
+    if redirect:
+        return redirect
     return static_file("result.html")
 
 @app.get("/admin/question")
-async def page_question():
+async def page_question(request: Request):
+    redirect = require_login_page(request)
+    if redirect:
+        return redirect
     return static_file("admin/question.html")
 
 @app.get("/admin/hidden")
-async def page_hidden():
+async def page_hidden(request: Request):
+    redirect = require_login_page(request)
+    if redirect:
+        return redirect
     return static_file("admin/hidden.html")
 
 
@@ -221,8 +311,11 @@ async def get_questions(round_num: int):
 
 @app.post("/api/submit")
 async def submit_quiz(submission: QuizSubmission, request: Request):
+    require_login(request)
     xff = request.headers.get("x-forwarded-for", "")
     client_ip = xff.split(",")[0].strip() if xff else request.headers.get("x-real-ip", request.client.host)
+    user = request.session.get("user", {})
+    submit_name = user.get("name", submission.name) if OIDC_ENABLED else submission.name
     questions = db_get_questions(submission.round)
 
     score = 0
@@ -244,11 +337,11 @@ async def submit_quiz(submission: QuizSubmission, request: Request):
     with get_db() as conn:
         conn.execute(
             "INSERT INTO results (round, name, ip, score, total, submitted_at, details) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (submission.round, encrypt(submission.name), encrypt(client_ip), score, len(questions), now, encrypt(details_json)),
+            (submission.round, encrypt(submit_name), encrypt(client_ip), score, len(questions), now, encrypt(details_json)),
         )
 
     return {
-        "name": submission.name,
+        "name": submit_name,
         "round": submission.round,
         "score": score,
         "total": len(questions),
@@ -281,19 +374,22 @@ async def get_results(round: int = 0):
     return results
 
 @app.delete("/api/results")
-async def clear_results():
+async def clear_results(request: Request):
+    require_login(request)
     with get_db() as conn:
         conn.execute("DELETE FROM results")
     return {"message": "결과가 초기화되었습니다."}
 
 @app.delete("/api/results/{result_id}")
-async def delete_result(result_id: int):
+async def delete_result(result_id: int, request: Request):
+    require_login(request)
     with get_db() as conn:
         conn.execute("DELETE FROM results WHERE id = ?", (result_id,))
     return {"message": "삭제되었습니다."}
 
 @app.patch("/api/results/{result_id}")
-async def update_result_name(result_id: int, body: NameUpdate):
+async def update_result_name(result_id: int, body: NameUpdate, request: Request):
+    require_login(request)
     name = body.name.strip()
     if not name:
         raise HTTPException(400, "이름을 입력하세요.")
@@ -316,11 +412,13 @@ async def get_result_details(result_id: int):
 # --- 관리자 회차 CRUD ---
 
 @app.get("/api/admin/rounds")
-async def admin_list_rounds():
+async def admin_list_rounds(request: Request):
+    require_login(request)
     return db_get_rounds()
 
 @app.post("/api/admin/rounds")
-async def admin_create_round(body: RoundCreate):
+async def admin_create_round(body: RoundCreate, request: Request):
+    require_login(request)
     with get_db() as conn:
         existing = conn.execute("SELECT round FROM rounds WHERE round = ?", (body.round,)).fetchone()
         if existing:
@@ -332,13 +430,15 @@ async def admin_create_round(body: RoundCreate):
     return {"message": f"{body.round}회차가 생성되었습니다."}
 
 @app.put("/api/admin/rounds/{round_num}")
-async def admin_update_round(round_num: int, body: RoundUpdate):
+async def admin_update_round(round_num: int, body: RoundUpdate, request: Request):
+    require_login(request)
     with get_db() as conn:
         conn.execute("UPDATE rounds SET title = ? WHERE round = ?", (encrypt(body.title), round_num))
     return {"message": "회차가 수정되었습니다."}
 
 @app.delete("/api/admin/rounds/{round_num}")
-async def admin_delete_round(round_num: int):
+async def admin_delete_round(round_num: int, request: Request):
+    require_login(request)
     with get_db() as conn:
         conn.execute("DELETE FROM rounds WHERE round = ?", (round_num,))
     return {"message": f"{round_num}회차가 삭제되었습니다."}
@@ -347,7 +447,8 @@ async def admin_delete_round(round_num: int):
 # --- 관리자 문제 마크다운 편집 ---
 
 @app.get("/api/admin/rounds/{round_num}/markdown")
-async def admin_get_markdown(round_num: int):
+async def admin_get_markdown(round_num: int, request: Request):
+    require_login(request)
     """DB에 저장된 문제를 마크다운 형식으로 반환"""
     questions = db_get_questions(round_num)
     lines = []
@@ -364,7 +465,8 @@ async def admin_get_markdown(round_num: int):
 
 
 @app.put("/api/admin/rounds/{round_num}/markdown")
-async def admin_save_markdown(round_num: int, body: MarkdownImport):
+async def admin_save_markdown(round_num: int, body: MarkdownImport, request: Request):
+    require_login(request)
     """마크다운을 파싱하여 해당 회차의 문제를 전부 교체"""
     parsed = parse_questions_md(body.markdown)
     if not parsed:

@@ -1,3 +1,6 @@
 fastapi
 uvicorn
 cryptography
+authlib
+httpx
+itsdangerous

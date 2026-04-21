@@ -21,3 +21,11 @@ persistence:
   accessMode: ReadWriteOnce
   size: 500Mi
 
+oidc:
+  enabled: true
+  issuer: "https://sign-in.nhnent.com/auth/realms/nhn"
+  clientId: "svccloudops"
+  redirectUri: "https://svc-cloudops.nhnent.com/auth/callback"
+  clientSecret: "3tGeNwlCi3HpIWz37z78LAFUxVfCSvBL"
+  sessionSecret: "CHANGE_ME_RANDOM_STRING"
+

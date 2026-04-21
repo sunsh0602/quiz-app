@@ -325,7 +325,11 @@
 </head>
 <body>
     <div class="container">
-        <header>
+        <header style="position:relative;">
+            <div id="user-topbar" style="display:none;position:absolute;top:10px;right:10px;font-size:0.85rem;">
+                <span id="topbar-name" style="color:#ccc;"></span>
+                <a href="/auth/logout" style="color:#ff6b6b;margin-left:8px;text-decoration:none;">로그아웃</a>
+            </div>
             <h1>관측 가능성과 근본 원인 분석으로 완성하는 AIOps</h1>
             <p id="subtitle">스터디 퀴즈</p>
         </header>
@@ -334,8 +338,8 @@
         <div id="start-section">
             <h2>퀴즈 응시</h2>
             <div class="form-group">
-                <label for="name-input">이름</label>
-                <input type="text" id="name-input" placeholder="이름 입력" maxlength="30" autocomplete="off">
+                <label>응시자</label>
+                <div id="user-name-display" style="font-size:1.2rem;font-weight:600;color:#00d2ff;padding:10px 0;"></div>
             </div>
             <div class="form-group">
                 <label for="round-select">시험 회차</label>
@@ -392,10 +396,21 @@
         let userName = '';
         let selectedRound = 0;
 
-        document.addEventListener('DOMContentLoaded', loadRounds);
-
-        document.getElementById('name-input').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') startQuiz();
+        document.addEventListener('DOMContentLoaded', async () => {
+            const me = await (await fetch('/api/auth/me')).json();
+            if (me.authenticated && me.user) {
+                userName = me.user.name;
+                document.getElementById('user-name-display').textContent = userName;
+                document.getElementById('topbar-name').textContent = userName;
+                document.getElementById('user-topbar').style.display = 'block';
+            } else if (me.oidc_enabled) {
+                location.href = '/auth/login';
+                return;
+            } else {
+                document.getElementById('user-name-display').textContent = '(로컬 테스트)';
+                userName = '테스트';
+            }
+            loadRounds();
         });
 
         async function loadRounds() {
@@ -412,11 +427,7 @@
         }
 
         async function startQuiz() {
-            userName = document.getElementById('name-input').value.trim();
-            if (!userName) {
-                document.getElementById('name-input').focus();
-                return;
-            }
+            if (!userName) return;
             selectedRound = parseInt(document.getElementById('round-select').value);
 
             const res = await fetch(`/api/questions/${selectedRound}`);
@@ -498,6 +509,11 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name: userName, round: selectedRound, answers })
             });
+            if (res.status === 401) {
+                alert('세션이 만료되었습니다. 다시 로그인합니다.');
+                location.href = '/auth/login';
+                return;
+            }
             const result = await res.json();
 
             setTimeout(() => {
