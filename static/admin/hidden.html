@@ -53,12 +53,7 @@
         .time-col { color: #888; font-size: 0.85rem; } .ip-col { color: #666; font-size: 0.8rem; }
         .empty-state { text-align: center; padding: 60px 20px; color: #666; }
         .empty-state p { font-size: 1.1rem; margin-bottom: 8px; }
-        .name-editable { cursor: pointer; border-bottom: 1px dashed rgba(255,255,255,0.3); }
-        .name-editable:hover { color: #ffc947; }
-        .name-edit-input {
-            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,200,71,0.5); border-radius: 6px;
-            color: #fff; padding: 4px 8px; font-size: 0.9rem; font-family: inherit; outline: none; width: 120px;
-        }
+        
         .detail-row td { padding: 0 !important; border-top: none !important; }
         .detail-panel { margin: 0 8px 12px; }
         .detail-card {
@@ -152,30 +147,14 @@ async function loadResults() {
         tr.innerHTML = `
             <td><span class="rank-badge ${rankClass}">${r.rank}</span></td>
             <td><span class="round-badge">${r.round}회차</span></td>
-            <td><span class="name-editable" onclick="editName(${r.id}, this)" title="클릭하여 이름 수정">${r.name}</span> <span class="ip-col">(${r.ip||'?'})</span></td>
+            <td>${r.name} <span class="ip-col">(${r.ip||'?'})</span></td>
             <td><div class="score-bar-container" onclick="toggleDetail(${r.id})" title="클릭하여 상세보기"><div class="score-bar"><div class="score-bar-fill" style="width:${pct}%;background:${barColor};"></div></div><span class="score-text">${r.score} / ${r.total}</span></div></td>
             <td class="time-col">${time}</td>
             <td><button class="btn btn-sm btn-danger" onclick="deleteResult(${r.id})" title="삭제">✕</button></td>`;
         tbody.appendChild(tr);
     });
 }
-function editName(id, el) {
-    if (el.querySelector('input')) return;
-    const oldName = el.textContent;
-    el.innerHTML = `<input class="name-edit-input" value="${oldName}" />`;
-    const input = el.querySelector('input');
-    input.focus();
-    input.select();
-    const save = async () => {
-        const newName = input.value.trim();
-        if (newName && newName !== oldName) {
-            await fetch(`/api/results/${id}`, { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify({name: newName}) });
-        }
-        el.textContent = newName || oldName;
-    };
-    input.addEventListener('blur', save);
-    input.addEventListener('keydown', e => { if (e.key === 'Enter') input.blur(); if (e.key === 'Escape') { input.value = oldName; input.blur(); } });
-}
+
 async function toggleDetail(id) {
     const existing = document.getElementById(`detail-${id}`);
     if (existing) { existing.remove(); return; }
