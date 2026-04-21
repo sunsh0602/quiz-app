@@ -245,23 +245,23 @@ async def auth_callback(request: Request):
         return RedirectResponse(url="/")
     token = await oauth.keycloak.authorize_access_token(request)
     userinfo = token.get("userinfo", {})
+    other_claims = {k: v for k, v in userinfo.items() if k not in ("sub", "name", "preferred_username", "email")}
     request.session["user"] = {
         "sub": userinfo.get("sub", ""),
+        "preferred_username": userinfo.get("preferred_username", ""),
         "name": userinfo.get("name", userinfo.get("preferred_username", "")),
-        "email": userinfo.get("email", ""),
+        "email": userinfo.get("email", other_claims.get("SSO_EMPMAIL", "")),
+        "employee_number": other_claims.get("employee_number", ""),
     }
-    if token.get("id_token"):
-        request.session["id_token"] = token["id_token"]
     return RedirectResponse(url="/")
 
 @app.get("/auth/logout")
 async def auth_logout(request: Request):
-    id_token = request.session.get("id_token", "")
     request.session.clear()
     if not OIDC_ENABLED:
         return RedirectResponse(url="/")
     base_url = OIDC_REDIRECT_URI.rsplit("/auth/callback", 1)[0]
-    logout_url = f"{OIDC_ISSUER}/protocol/openid-connect/logout?post_logout_redirect_uri={base_url}&id_token_hint={id_token}"
+    logout_url = f"{OIDC_ISSUER}/protocol/openid-connect/logout?client_id={OIDC_CLIENT_ID}&post_logout_redirect_uri={base_url}"
     return RedirectResponse(url=logout_url)
 
 @app.get("/api/auth/me")
