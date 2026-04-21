@@ -469,6 +469,12 @@
         function onAnswer(idx) {
             document.getElementById(`card-${idx}`).classList.add('answered');
             updateProgress();
+            const nextCard = document.getElementById(`card-${idx + 1}`);
+            if (nextCard) {
+                setTimeout(() => nextCard.scrollIntoView({ behavior: 'smooth', block: 'center' }), 150);
+            } else {
+                setTimeout(() => document.getElementById('submit-area').scrollIntoView({ behavior: 'smooth', block: 'center' }), 150);
+            }
         }
 
         function updateProgress() {
