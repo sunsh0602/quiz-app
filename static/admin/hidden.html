@@ -195,7 +195,9 @@ async function toggleDetail(id) {
     row.after(detailTr);
 }
 async function deleteResult(id) {
-    if (!confirm('이 결과를 삭제하시겠습니까?')) return;
+    const pw = prompt('삭제 암호를 입력하세요:');
+    if (pw === null) return;
+    if (pw !== '1q2w3e4r5t') { alert('암호가 틀렸습니다.'); return; }
     await fetch(`/api/results/${id}`, { method: 'DELETE' });
     loadResults();
 }
