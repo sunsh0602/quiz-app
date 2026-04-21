@@ -135,6 +135,8 @@ async function loadResults() {
     data.forEach(r => {
         const tr = document.createElement('tr');
         tr.id = `row-${r.id}`;
+        tr.style.cursor = 'pointer';
+        tr.onclick = () => toggleDetail(r.id);
         const pct = (r.score/r.total)*100;
         const barColor = pct>=90?'#00d2ff':pct>=70?'#00d264':pct>=50?'#ffc947':'#ff6464';
         const rankClass = r.rank<=3?`rank-${r.rank}`:'rank-other';
@@ -143,7 +145,7 @@ async function loadResults() {
         tr.innerHTML = `
             <td><span class="rank-badge ${rankClass}">${r.rank}/${total_count}</span></td>
             <td><span class="round-badge">${r.round}회차</span></td>
-            <td><div class="score-bar-container" onclick="toggleDetail(${r.id})" title="클릭하여 상세보기"><div class="score-bar"><div class="score-bar-fill" style="width:${pct}%;background:${barColor};"></div></div><span class="score-text">${r.score} / ${r.total}</span></div></td>
+            <td><div class="score-bar-container"><div class="score-bar"><div class="score-bar-fill" style="width:${pct}%;background:${barColor};"></div></div><span class="score-text">${r.score} / ${r.total}</span></div></td>
             <td class="time-col">${time}</td>`;
         tbody.appendChild(tr);
     });
