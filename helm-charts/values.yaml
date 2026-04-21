@@ -28,4 +28,5 @@ oidc:
   redirectUri: "https://svc-cloudops.nhnent.com/auth/callback"
   clientSecret: "3tGeNwlCi3HpIWz37z78LAFUxVfCSvBL"
   sessionSecret: "CHANGE_ME_RANDOM_STRING"
+  deletePassword: "1q2w3e4r5t"
 

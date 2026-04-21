@@ -28,6 +28,7 @@ OIDC_CLIENT_ID = os.getenv("OIDC_CLIENT_ID", "svccloudops")
 OIDC_CLIENT_SECRET = os.getenv("OIDC_CLIENT_SECRET", "3tGeNwlCi3HpIWz37z78LAFUxVfCSvBL")
 OIDC_REDIRECT_URI = os.getenv("OIDC_REDIRECT_URI", "https://svc-cloudops.nhnent.com/auth/callback")
 SESSION_SECRET = os.getenv("SESSION_SECRET", "quiz-app-session-secret-change-me")
+DELETE_PASSWORD = os.getenv("DELETE_PASSWORD", "1q2w3e4r5t")
 
 app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET)
 
@@ -196,6 +197,9 @@ class MarkdownImport(BaseModel):
 
 class NameUpdate(BaseModel):
     name: str
+
+class DeleteRequest(BaseModel):
+    password: str
 
 
 # --- 앱 시작 ---
@@ -401,8 +405,10 @@ async def clear_results(request: Request):
     return {"message": "결과가 초기화되었습니다."}
 
 @app.delete("/api/results/{result_id}")
-async def delete_result(result_id: int, request: Request):
+async def delete_result(result_id: int, body: DeleteRequest, request: Request):
     require_login(request)
+    if body.password != DELETE_PASSWORD:
+        raise HTTPException(status_code=403, detail="암호가 틀렸습니다.")
     with get_db() as conn:
         conn.execute("DELETE FROM results WHERE id = ?", (result_id,))
     return {"message": "삭제되었습니다."}

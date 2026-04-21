@@ -197,8 +197,12 @@ async function toggleDetail(id) {
 async function deleteResult(id) {
     const pw = prompt('삭제 암호를 입력하세요:');
     if (pw === null) return;
-    if (pw !== '1q2w3e4r5t') { alert('암호가 틀렸습니다.'); return; }
-    await fetch(`/api/results/${id}`, { method: 'DELETE' });
+    const res = await fetch(`/api/results/${id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: pw })
+    });
+    if (res.status === 403) { alert('암호가 틀렸습니다.'); return; }
     loadResults();
 }
 
