@@ -355,15 +355,9 @@ async def submit_quiz(submission: QuizSubmission, request: Request):
 
 def _fetch_results(round: int = 0, name_filter: str = ""):
     with get_db() as conn:
-        if round > 0:
-            rows = conn.execute(
-                "SELECT * FROM results WHERE round = ? ORDER BY score DESC, submitted_at ASC",
-                (round,),
-            ).fetchall()
-        else:
-            rows = conn.execute(
-                "SELECT * FROM results ORDER BY round ASC, score DESC, submitted_at ASC"
-            ).fetchall()
+        rows = conn.execute(
+            "SELECT * FROM results ORDER BY round ASC, score DESC, submitted_at ASC"
+        ).fetchall()
 
     results = []
     for r in rows:
@@ -372,8 +366,16 @@ def _fetch_results(round: int = 0, name_filter: str = ""):
             "ip": decrypt(r["ip"]), "score": r["score"], "total": r["total"],
             "submitted_at": r["submitted_at"],
         })
-    for i, r in enumerate(results):
-        r["rank"] = i + 1
+
+    from itertools import groupby
+    for _, group in groupby(results, key=lambda x: x["round"]):
+        items = list(group)
+        for i, r in enumerate(items):
+            r["rank"] = i + 1
+            r["round_total_count"] = len(items)
+
+    if round > 0:
+        results = [r for r in results if r["round"] == round]
     if name_filter:
         results = [r for r in results if r["name"] == name_filter]
     return results

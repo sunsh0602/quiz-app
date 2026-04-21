@@ -36,7 +36,7 @@
         thead th { background: rgba(255,255,255,0.06); padding: 14px 16px; text-align: left; font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; color: #aaa; }
         tbody td { padding: 14px 16px; border-top: 1px solid rgba(255,255,255,0.05); font-size: 0.95rem; }
         tbody tr:hover { background: rgba(255,255,255,0.04); }
-        .rank-badge { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; font-weight: 700; font-size: 0.85rem; }
+        .rank-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; height: 32px; border-radius: 16px; padding: 0 8px; font-weight: 700; font-size: 0.85rem; }
         .rank-1 { background: linear-gradient(135deg, #ffd700, #ffaa00); color: #1a1a2e; }
         .rank-2 { background: linear-gradient(135deg, #c0c0c0, #a0a0a0); color: #1a1a2e; }
         .rank-3 { background: linear-gradient(135deg, #cd7f32, #a0622e); color: #fff; }
@@ -78,11 +78,11 @@
 <body>
     <div class="container">
         <header>
-            <h1>퀴즈 관리자 대시보드</h1>
-            <p>퀴즈 결과 실시간 현황</p>
+            <h1>내 퀴즈 결과</h1>
+            <p>나의 응시 기록</p>
         </header>
         <div class="stats-grid">
-            <div class="stat-card"><div class="stat-value blue" id="stat-total">0</div><div class="stat-label">총 응시자</div></div>
+            <div class="stat-card"><div class="stat-value blue" id="stat-total">0</div><div class="stat-label">응시 횟수</div></div>
             <div class="stat-card"><div class="stat-value green" id="stat-avg">-</div><div class="stat-label">평균 점수</div></div>
             <div class="stat-card"><div class="stat-value yellow" id="stat-top">-</div><div class="stat-label">최고 점수</div></div>
         </div>
@@ -97,8 +97,8 @@
             <div class="empty-state" id="empty-state"><p>아직 응시자가 없습니다</p></div>
             <table id="result-table" style="display:none;">
                 <thead><tr>
-                    <th style="width:50px;">순위</th><th style="width:70px;">회차</th>
-                    <th>이름 (IP)</th><th style="width:220px;">점수</th><th style="width:140px;">제출 시간</th>
+                    <th style="width:80px;">회차 순위</th><th style="width:70px;">회차</th>
+                    <th style="width:220px;">점수</th><th style="width:140px;">제출 시간</th>
                 </tr></thead>
                 <tbody id="result-body"></tbody>
             </table>
@@ -139,10 +139,10 @@ async function loadResults() {
         const barColor = pct>=90?'#00d2ff':pct>=70?'#00d264':pct>=50?'#ffc947':'#ff6464';
         const rankClass = r.rank<=3?`rank-${r.rank}`:'rank-other';
         const time = new Date(r.submitted_at).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+        const total_count = r.round_total_count || '?';
         tr.innerHTML = `
-            <td><span class="rank-badge ${rankClass}">${r.rank}</span></td>
+            <td><span class="rank-badge ${rankClass}">${r.rank}/${total_count}</span></td>
             <td><span class="round-badge">${r.round}회차</span></td>
-            <td><span style="font-weight:600;">${r.name}</span> <span class="ip-col">(${r.ip||'?'})</span></td>
             <td><div class="score-bar-container" onclick="toggleDetail(${r.id})" title="클릭하여 상세보기"><div class="score-bar"><div class="score-bar-fill" style="width:${pct}%;background:${barColor};"></div></div><span class="score-text">${r.score} / ${r.total}</span></div></td>
             <td class="time-col">${time}</td>`;
         tbody.appendChild(tr);
@@ -159,7 +159,7 @@ async function toggleDetail(id) {
     const detailTr = document.createElement('tr');
     detailTr.id = `detail-${id}`;
     detailTr.className = 'detail-row';
-    let html = '<td colspan="5"><div class="detail-panel">';
+    let html = '<td colspan="4"><div class="detail-panel">';
     details.forEach((d, i) => {
         const q = questions[i];
         if (!q) return;
