@@ -124,10 +124,10 @@ async function loadResults() {
         document.getElementById('result-table').style.display = 'none';
         return;
     }
-    const scores = data.map(d => d.score);
-    document.getElementById('stat-avg').textContent = (scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1);
-    const top = Math.max(...scores);
-    document.getElementById('stat-top').textContent = `${top} / ${data.find(d=>d.score===top).total}`;
+    const pcts = data.map(d => Math.round(d.score/d.total*100));
+    document.getElementById('stat-avg').textContent = (pcts.reduce((a,b)=>a+b,0)/pcts.length).toFixed(1) + '점';
+    const topPct = Math.max(...pcts);
+    document.getElementById('stat-top').textContent = topPct + '점';
     document.getElementById('empty-state').style.display = 'none';
     document.getElementById('result-table').style.display = 'table';
     const tbody = document.getElementById('result-body');
@@ -145,7 +145,7 @@ async function loadResults() {
         tr.innerHTML = `
             <td><span class="rank-badge ${rankClass}">${r.rank}/${total_count}</span></td>
             <td><span class="round-badge">${r.round}회차</span></td>
-            <td><div class="score-bar-container"><div class="score-bar"><div class="score-bar-fill" style="width:${pct}%;background:${barColor};"></div></div><span class="score-text">${r.score} / ${r.total}</span></div></td>
+            <td><div class="score-bar-container"><div class="score-bar"><div class="score-bar-fill" style="width:${pct}%;background:${barColor};"></div></div><span class="score-text">${Math.round(pct)}점 <small style="color:#888;font-size:0.75rem;">(${r.score}/${r.total})</small></span></div></td>
             <td class="time-col">${time}</td>`;
         tbody.appendChild(tr);
     });
