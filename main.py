@@ -250,14 +250,18 @@ async def auth_callback(request: Request):
         "name": userinfo.get("name", userinfo.get("preferred_username", "")),
         "email": userinfo.get("email", ""),
     }
+    if token.get("id_token"):
+        request.session["id_token"] = token["id_token"]
     return RedirectResponse(url="/")
 
 @app.get("/auth/logout")
 async def auth_logout(request: Request):
+    id_token = request.session.get("id_token", "")
     request.session.clear()
     if not OIDC_ENABLED:
         return RedirectResponse(url="/")
-    logout_url = f"{OIDC_ISSUER}/protocol/openid-connect/logout?redirect_uri={OIDC_REDIRECT_URI.rsplit('/auth/callback', 1)[0]}"
+    base_url = OIDC_REDIRECT_URI.rsplit("/auth/callback", 1)[0]
+    logout_url = f"{OIDC_ISSUER}/protocol/openid-connect/logout?post_logout_redirect_uri={base_url}&id_token_hint={id_token}"
     return RedirectResponse(url=logout_url)
 
 @app.get("/api/auth/me")
