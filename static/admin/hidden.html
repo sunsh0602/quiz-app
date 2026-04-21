@@ -95,7 +95,6 @@
             <div class="toolbar-btns">
                 <select id="round-filter" onchange="loadResults()"><option value="0">전체 회차</option></select>
                 <button class="btn" onclick="loadResults()">새로고침</button>
-                <button class="btn btn-danger" onclick="clearResults()">전체 초기화</button>
             </div>
         </div>
         <div id="table-area">
@@ -198,11 +197,7 @@ async function deleteResult(id) {
     await fetch(`/api/results/${id}`, { method: 'DELETE' });
     loadResults();
 }
-async function clearResults() {
-    if (!confirm('정말 모든 결과를 초기화하시겠습니까?')) return;
-    await fetch('/api/results', { method: 'DELETE' });
-    loadResults();
-}
+
 loadRoundFilter(); loadResults();
 </script>
 </body>
