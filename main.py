@@ -353,8 +353,7 @@ async def submit_quiz(submission: QuizSubmission, request: Request):
         "questions": questions,
     }
 
-@app.get("/api/results")
-async def get_results(round: int = 0):
+def _fetch_results(round: int = 0, name_filter: str = ""):
     with get_db() as conn:
         if round > 0:
             rows = conn.execute(
@@ -375,7 +374,22 @@ async def get_results(round: int = 0):
         })
     for i, r in enumerate(results):
         r["rank"] = i + 1
+    if name_filter:
+        results = [r for r in results if r["name"] == name_filter]
     return results
+
+
+@app.get("/api/results")
+async def get_results(request: Request, round: int = 0):
+    user = request.session.get("user", {})
+    user_name = user.get("name", "")
+    return _fetch_results(round=round, name_filter=user_name)
+
+
+@app.get("/api/admin/results")
+async def admin_get_results(request: Request, round: int = 0):
+    require_login(request)
+    return _fetch_results(round=round)
 
 @app.delete("/api/results")
 async def clear_results(request: Request):

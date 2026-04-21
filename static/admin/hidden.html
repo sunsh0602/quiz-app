@@ -120,7 +120,7 @@ async function loadRoundFilter() {
 }
 async function loadResults() {
     const round = document.getElementById('round-filter').value;
-    const data = await (await fetch(round > 0 ? `/api/results?round=${round}` : '/api/results')).json();
+    const data = await (await fetch(round > 0 ? `/api/admin/results?round=${round}` : '/api/admin/results')).json();
     document.getElementById('stat-total').textContent = data.length;
     if (!data.length) {
         document.getElementById('stat-avg').textContent = '-';
