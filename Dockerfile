@@ -8,7 +8,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY main.py questions.py ./
+COPY main.py questions.py crypto.py ./
 COPY static/ static/
 
 RUN mkdir -p /app/data

@@ -9,6 +9,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from questions import load_questions, parse_questions_md, QUESTIONS_DIR
+from crypto import encrypt, decrypt
 
 app = FastAPI()
 
@@ -83,12 +84,12 @@ def seed_from_md():
 
             conn.execute(
                 "INSERT INTO rounds (round, title, created_at) VALUES (?, ?, ?)",
-                (round_num, title, datetime.now().isoformat()),
+                (round_num, encrypt(title), datetime.now().isoformat()),
             )
             for q in qs:
                 conn.execute(
                     "INSERT INTO questions (round, sort_order, question_text, options, answer_index, explanation) VALUES (?, ?, ?, ?, ?, ?)",
-                    (round_num, q["id"], q["question"], json.dumps(q["options"], ensure_ascii=False), q["answer"], q["explanation"]),
+                    (round_num, q["id"], encrypt(q["question"]), encrypt(json.dumps(q["options"], ensure_ascii=False)), q["answer"], encrypt(q["explanation"])),
                 )
 
 
@@ -113,7 +114,7 @@ def db_get_rounds():
             FROM rounds r LEFT JOIN questions q ON r.round = q.round
             GROUP BY r.round ORDER BY r.round
         """).fetchall()
-    return [{"round": r["round"], "title": r["title"], "question_count": r["question_count"]} for r in rows]
+    return [{"round": r["round"], "title": decrypt(r["title"]), "question_count": r["question_count"]} for r in rows]
 
 
 def db_get_questions(round_num: int) -> list[dict]:
@@ -125,10 +126,10 @@ def db_get_questions(round_num: int) -> list[dict]:
     return [
         {
             "id": r["id"],
-            "question": r["question_text"],
-            "options": json.loads(r["options"]),
+            "question": decrypt(r["question_text"]),
+            "options": json.loads(decrypt(r["options"])),
             "answer": r["answer_index"],
-            "explanation": r["explanation"] or "",
+            "explanation": decrypt(r["explanation"] or ""),
         }
         for r in rows
     ]
@@ -157,9 +158,33 @@ class NameUpdate(BaseModel):
 
 # --- 앱 시작 ---
 
+def migrate_encrypt():
+    """기존 평문 데이터를 암호화로 마이그레이션 (Fernet 토큰이 아닌 데이터만 변환)"""
+    def is_encrypted(val: str) -> bool:
+        if not val:
+            return True
+        return val.startswith("gAAAAA")
+
+    with get_db() as conn:
+        for row in conn.execute("SELECT round, title FROM rounds").fetchall():
+            if not is_encrypted(row["title"]):
+                conn.execute("UPDATE rounds SET title = ? WHERE round = ?", (encrypt(row["title"]), row["round"]))
+
+        for row in conn.execute("SELECT id, question_text, options, explanation FROM questions").fetchall():
+            if not is_encrypted(row["question_text"]):
+                conn.execute("UPDATE questions SET question_text = ?, options = ?, explanation = ? WHERE id = ?",
+                    (encrypt(row["question_text"]), encrypt(row["options"]), encrypt(row["explanation"] or ""), row["id"]))
+
+        for row in conn.execute("SELECT id, name, ip, details FROM results").fetchall():
+            if not is_encrypted(row["name"]):
+                conn.execute("UPDATE results SET name = ?, ip = ?, details = ? WHERE id = ?",
+                    (encrypt(row["name"]), encrypt(row["ip"]), encrypt(row["details"] or ""), row["id"]))
+
+
 @app.on_event("startup")
 def startup():
     init_db()
+    migrate_encrypt()
     seed_from_md()
 
 
@@ -219,7 +244,7 @@ async def submit_quiz(submission: QuizSubmission, request: Request):
     with get_db() as conn:
         conn.execute(
             "INSERT INTO results (round, name, ip, score, total, submitted_at, details) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (submission.round, submission.name, client_ip, score, len(questions), now, details_json),
+            (submission.round, encrypt(submission.name), encrypt(client_ip), score, len(questions), now, encrypt(details_json)),
         )
 
     return {
@@ -247,8 +272,8 @@ async def get_results(round: int = 0):
     results = []
     for r in rows:
         results.append({
-            "id": r["id"], "round": r["round"], "name": r["name"],
-            "ip": r["ip"], "score": r["score"], "total": r["total"],
+            "id": r["id"], "round": r["round"], "name": decrypt(r["name"]),
+            "ip": decrypt(r["ip"]), "score": r["score"], "total": r["total"],
             "submitted_at": r["submitted_at"],
         })
     for i, r in enumerate(results):
@@ -273,7 +298,7 @@ async def update_result_name(result_id: int, body: NameUpdate):
     if not name:
         raise HTTPException(400, "이름을 입력하세요.")
     with get_db() as conn:
-        conn.execute("UPDATE results SET name = ? WHERE id = ?", (name, result_id))
+        conn.execute("UPDATE results SET name = ? WHERE id = ?", (encrypt(name), result_id))
     return {"message": "수정되었습니다."}
 
 @app.get("/api/results/{result_id}/details")
@@ -282,10 +307,10 @@ async def get_result_details(result_id: int):
         row = conn.execute("SELECT * FROM results WHERE id = ?", (result_id,)).fetchone()
     if not row:
         raise HTTPException(404, "결과를 찾을 수 없습니다.")
-    details_raw = row["details"] if row["details"] else "[]"
+    details_raw = decrypt(row["details"]) if row["details"] else "[]"
     details = json.loads(details_raw)
     questions = db_get_questions(row["round"])
-    return {"result": {"id": row["id"], "round": row["round"], "name": row["name"], "score": row["score"], "total": row["total"]}, "details": details, "questions": questions}
+    return {"result": {"id": row["id"], "round": row["round"], "name": decrypt(row["name"]), "score": row["score"], "total": row["total"]}, "details": details, "questions": questions}
 
 
 # --- 관리자 회차 CRUD ---
@@ -302,14 +327,14 @@ async def admin_create_round(body: RoundCreate):
             raise HTTPException(400, f"{body.round}회차가 이미 존재합니다.")
         conn.execute(
             "INSERT INTO rounds (round, title, created_at) VALUES (?, ?, ?)",
-            (body.round, body.title, datetime.now().isoformat()),
+            (body.round, encrypt(body.title), datetime.now().isoformat()),
         )
     return {"message": f"{body.round}회차가 생성되었습니다."}
 
 @app.put("/api/admin/rounds/{round_num}")
 async def admin_update_round(round_num: int, body: RoundUpdate):
     with get_db() as conn:
-        conn.execute("UPDATE rounds SET title = ? WHERE round = ?", (body.title, round_num))
+        conn.execute("UPDATE rounds SET title = ? WHERE round = ?", (encrypt(body.title), round_num))
     return {"message": "회차가 수정되었습니다."}
 
 @app.delete("/api/admin/rounds/{round_num}")
@@ -354,7 +379,7 @@ async def admin_save_markdown(round_num: int, body: MarkdownImport):
         for q in parsed:
             conn.execute(
                 "INSERT INTO questions (round, sort_order, question_text, options, answer_index, explanation) VALUES (?, ?, ?, ?, ?, ?)",
-                (round_num, q["id"], q["question"], json.dumps(q["options"], ensure_ascii=False), q["answer"], q["explanation"]),
+                (round_num, q["id"], encrypt(q["question"]), encrypt(json.dumps(q["options"], ensure_ascii=False)), q["answer"], encrypt(q["explanation"])),
             )
 
     return {"message": f"{len(parsed)}개 문제가 저장되었습니다.", "count": len(parsed)}
