@@ -374,8 +374,11 @@ def _fetch_results(round: int = 0, name_filter: str = ""):
     from itertools import groupby
     for _, group in groupby(results, key=lambda x: x["round"]):
         items = list(group)
+        rank = 1
         for i, r in enumerate(items):
-            r["rank"] = i + 1
+            if i > 0 and r["score"] < items[i - 1]["score"]:
+                rank = i + 1
+            r["rank"] = rank
             r["round_total_count"] = len(items)
 
     if round > 0:
