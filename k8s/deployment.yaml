@@ -24,7 +24,7 @@ spec:
         - name: infra-platform
           # TODO: 사내 레지스트리 경로/태그로 변경 (예: harbor.nhnent.com/infraplatform/infra-platform:1.0.0)
           image: infra-platform:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - name: http
               containerPort: 80
