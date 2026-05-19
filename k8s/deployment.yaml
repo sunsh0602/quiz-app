@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: infra-platform-deployment
+  namespace: infra-platform
+  labels:
+    app: infra-platform
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0  # 무중단 배포: 기존 Pod 유지하면서 새 Pod 띄움
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: infra-platform
+  template:
+    metadata:
+      labels:
+        app: infra-platform
+    spec:
+      containers:
+        - name: infra-platform
+          # TODO: 사내 레지스트리 경로/태그로 변경 (예: harbor.nhnent.com/infraplatform/infra-platform:1.0.0)
+          image: infra-platform:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 15
+            timeoutSeconds: 2
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "32Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"

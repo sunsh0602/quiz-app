@@ -1,0 +1,27 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: infra-platform-ingress
+  namespace: infra-platform
+  labels:
+    app: infra-platform
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: infra-cloudops.nhnent.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: infra-platform-svc
+                port:
+                  number: 80
+  # HTTPS 적용 시 주석 해제 후 인증서 Secret 이름 입력
+  # tls:
+  #   - hosts:
+  #       - infra-cloudops.nhnent.com
+  #     secretName: infra-cloudops-tls

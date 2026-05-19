@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>인프라 자동화 플랫폼 - 인증서 검증</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar" id="sidebar"></aside>
+
+        <main class="main-content">
+            <header class="content-header">
+                <h2>인증서 검증</h2>
+            </header>
+            <div class="content-body">
+                <!-- 입력 -->
+                <div class="card">
+                    <div class="card-header"><h3>검증 결과 입력</h3></div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label class="form-label">인증서 검증 스크립트 결과를 붙여넣기 하세요</label>
+                            <textarea class="form-input cert-textarea" id="cert-input"
+                                rows="12" placeholder="=== 인증서 검증 (/path/to/cert) ===&#10;&#10;[검사] 파일 존재 확인&#10;[OK]   Chain_RootCA_Bundle.crt 존재&#10;..."></textarea>
+                        </div>
+                        <div class="action-bar">
+                            <button class="btn btn-primary" id="btn-cert-render">결과 보기</button>
+                            <button class="btn btn-outline" id="btn-cert-example">예제 불러오기</button>
+                            <button class="btn btn-outline" id="btn-cert-clear">초기화</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 결과 -->
+                <div class="card hidden" id="cert-result-card">
+                    <div class="card-header">
+                        <h3>검증 결과</h3>
+                        <div class="cert-summary" id="cert-summary"></div>
+                    </div>
+                    <div class="card-body" style="padding:0;">
+                        <pre class="cert-output" id="cert-output"></pre>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/layout.js"></script>
+    <script src="js/tasks/cert-verify.js"></script>
+</body>
+</html>
